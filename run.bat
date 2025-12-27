@@ -1,0 +1,1 @@
+python -m frontend.src.main
