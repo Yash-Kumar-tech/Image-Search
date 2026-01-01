@@ -25,12 +25,12 @@ class ResultsGrid(ft.GridView):
                 path = r.path,
                 tags = r.tags,
                 indexedDate = r.indexedDate,
-                on_hover = self.handleCardHover,
+                onHover = self.handleCardHover,
             )
             self.controls.append(card)
         self.update()
         
-    def handleCardHover(self, e: ft.Event[ft.Container]):
+    def handleCardHover(self, e: ft.ControlEvent):
         if e.data == "true":
             e.control.shadow = ft.BoxShadow(
                 spread_radius=1,

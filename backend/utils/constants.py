@@ -1,8 +1,10 @@
-from typing import Literal
 from pathlib import Path
 
-IMAGE_EXTENSIONS = Literal[".jpg", ".jpeg", ".png"]
+# Base directory for all data
+DATA_DIR = Path("data")
+DATA_DIR.mkdir(exist_ok=True)
 
-DB_PATH = Path("data/metadata.db")
+IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".webp"]
 
-VECTOR_DB_PATH = "data/vector_store"
+DB_PATH = DATA_DIR / "metadata.db"
+VECTOR_DB_PATH = str(DATA_DIR / "vector_store")

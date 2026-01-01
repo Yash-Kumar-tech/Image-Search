@@ -55,7 +55,7 @@ class SplashScreen(ft.Container):
             alignment=ft.MainAxisAlignment.CENTER
         )
 
-    async def animate_in(self):
+    async def animateIn(self):
         await asyncio.sleep(0.1)
         self.logo.opacity = 1
         self.title.opacity = 1
@@ -63,9 +63,9 @@ class SplashScreen(ft.Container):
         await asyncio.sleep(0.5)
         self.status.opacity = 1
         self.progress.opacity = 1
-        self.status.value = "Loading Qwen-VL Model..."
+        self.status.value = "Loading AI Model..."
         self.update()
 
-    def set_status(self, text: str):
+    def setStatus(self, text: str):
         self.status.value = text
         self.update()

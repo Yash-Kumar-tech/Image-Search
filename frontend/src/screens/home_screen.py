@@ -1,4 +1,6 @@
 import flet as ft
+import asyncio
+from pathlib import Path
 
 from backend.services.search import SearchEngine
 from frontend.src.components.results_grid import ResultsGrid
@@ -25,12 +27,21 @@ class HomeScreen(ft.Column):
             text_align = ft.TextAlign.CENTER,
             color = ft.Colors.ON_SURFACE_VARIANT
         )
+
+        self.searchSpinner = ft.ProgressRing(
+            width=32,
+            height=32,
+            stroke_width=3,
+            visible=False,
+            color=ft.Colors.PRIMARY
+        )
         
         self.controls = [
             self.topBar,
             ft.Container(
                 content=ft.Column([
                     self.welcomeLabel,
+                    self.searchSpinner,
                     ft.Container(
                         content=self.resultsGrid, 
                         expand=True,
@@ -47,39 +58,36 @@ class HomeScreen(ft.Column):
             )
         ]
         
-    def runSearch(self, e = None):
+    async def runSearch(self, e = None):
         query = self.topBar.searchInputField.value.strip()
         
         self.welcomeLabel.visible = False
+        self.searchSpinner.visible = True
+        self.resultsGrid.visible = False
+        self.update()
         
-        # Merge search uses Hybrid by default (searching both content and tags)
-        # We pass the same query for both tag filter and semantic query
-        results = self.searchEngine.searchhybrid(query, tagFilter=query)
-        
-        # If it's a dict (from searchhybrid), we extract results or just show them if the grid supports it
-        # Actually searchhybrid returns {"tagResults": ..., "semanticResults": ...}
-        # But for the UI, we might want to merge them.
-        
-        # Let's fix searchhybrid return type or handle it here
-        tag_results = results.get("tagResults", [])
-        semantic_results = results.get("semanticResults", [])
-        
-        # Combine unique results by path
-        seen_paths = set()
-        combined = []
-        for r in tag_results + semantic_results:
-            if r.path not in seen_paths:
-                combined.append(r)
-                seen_paths.add(r.path)
-        
-        self.resultsGrid.showResults(combined)
+        try:
+            # Run model/search in background thread to keep UI alive
+            results = await asyncio.to_thread(self.searchEngine.searchHybrid, query, tagFilter=query)
+            
+            tagResults = results.get("tagResults", [])
+            semanticResults = results.get("semanticResults", [])
+            
+            # Combine unique results by path
+            seenPaths = set()
+            combined = []
+            for r in tagResults + semanticResults:
+                if r.path not in seenPaths:
+                    combined.append(r)
+                    seenPaths.add(r.path)
+            
+            self.resultsGrid.showResults(combined)
+        except Exception as ex:
+            print(f"Search Error: {ex}")
+        finally:
+            self.searchSpinner.visible = False
+            self.resultsGrid.visible = True
+            self.update()
         
     def changeTheme(self, e):
-        selected = self.topBar.themeDropdown.value.lower() # type: ignore
-        if selected == "dark":
-            self.page.theme_mode = ft.ThemeMode.DARK
-        elif selected == "light":
-            self.page.theme_mode = ft.ThemeMode.LIGHT
-        else:
-            self.page.theme_mode = ft.ThemeMode.SYSTEM
-        self.page.update()
+        pass

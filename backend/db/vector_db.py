@@ -1,19 +1,14 @@
 import chromadb
-from chromadb.config import Settings
-from typing import Any, Dict
+from typing import Any
 from backend.utils.constants import VECTOR_DB_PATH
-from backend.utils.data_classes import SearchResult
 
 class VectorDB:
     def __init__(
         self,
         persistDir: str = VECTOR_DB_PATH
     ):
-        self.client = chromadb.Client(
-            Settings(
-                # persist_dir = persistDir
-            )
-        )
+        # Using PersistentClient for disk storage
+        self.client = chromadb.PersistentClient(path=persistDir)
         self.collection = self.client.get_or_create_collection("images")
         
     def addEmbedding(
@@ -25,6 +20,9 @@ class VectorDB:
             ids = [id],
             embeddings = [embedding],
         )
+        
+    def removeEmbedding(self, id: str):
+        self.collection.delete(ids=[id])
     
     def search(
         self,

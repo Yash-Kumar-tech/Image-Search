@@ -2,6 +2,8 @@ import flet as ft
 from typing import Callable
 
 from frontend.src.screens.index_screen import IndexScreen
+from frontend.src.screens.settings_screen import SettingsScreen
+from frontend.src.screens.tags_screen import GlobalTagsScreen
 
 class TopBar(ft.Container):
     def __init__(
@@ -64,13 +66,21 @@ class TopBar(ft.Container):
         
         self.tagsBtn = ft.IconButton(
             icon=ft.Icons.TAG_ROUNDED,
-            tooltip="Custom Tags",
+            on_click=self.openGlobalTagsDialog,
+            tooltip="Custom Tags Manager",
+            icon_color=ft.Colors.ON_SURFACE_VARIANT
+        )
+
+        self.settingsBtn = ft.IconButton(
+            icon=ft.Icons.SETTINGS_ROUNDED,
+            on_click=self.openSettingsDialog,
+            tooltip="Application Settings",
             icon_color=ft.Colors.ON_SURFACE_VARIANT
         )
 
         # Theme Toggler (Cycle: System -> Light -> Dark)
-        self.theme_modes = ["system", "light", "dark"]
-        self.current_theme_index = 0
+        self.themeModes = ["system", "light", "dark"]
+        self.currentThemeIndex = 0
         self.themeBtn = ft.IconButton(
             icon=ft.Icons.BRIGHTNESS_AUTO_ROUNDED,
             on_click=self.toggleTheme,
@@ -80,11 +90,11 @@ class TopBar(ft.Container):
         
         # We still need a reference for the callback logic if it relies on dropdown value
         self.themeDropdown = ft.Dropdown(value="System", visible=False)
-        self.theme_callback = themeCallback
+        self.themeCallback = themeCallback
 
         from backend.services.indexing_manager import IndexingManager
-        self.indexing_manager = IndexingManager()
-        self.indexing_manager.subscribe(self.update_indexing_status)
+        self.indexingManager = IndexingManager()
+        self.indexingManager.subscribe(self.updateIndexingStatus)
 
         self.indexStatusRing = ft.ProgressRing(width=16, height=16, stroke_width=2, visible=False)
         self.indexStatusText = ft.Text("", size=11, color=ft.Colors.PRIMARY, weight=ft.FontWeight.W_500, visible=False)
@@ -109,6 +119,7 @@ class TopBar(ft.Container):
                         ft.Container(width=1, bgcolor=ft.Colors.OUTLINE_VARIANT, height=24), 
                         self.indexBtn,
                         self.tagsBtn,
+                        self.settingsBtn,
                         self.themeBtn,
                     ],
                     spacing=4,
@@ -119,17 +130,19 @@ class TopBar(ft.Container):
         )
         
         self.indexDlg = IndexScreen()
+        self.settingsDlg = SettingsScreen(page)
+        self.globalTagsDlg = GlobalTagsScreen()
 
-    def update_indexing_status(self):
-        is_indexing = self.indexing_manager.is_indexing
-        self.indexStatusContainer.visible = is_indexing
-        self.indexStatusRing.visible = is_indexing
-        self.indexStatusRing.value = self.indexing_manager.progress
+    def updateIndexingStatus(self):
+        isIndexing = self.indexingManager.isIndexing
+        self.indexStatusContainer.visible = isIndexing
+        self.indexStatusRing.visible = isIndexing
+        self.indexStatusRing.value = self.indexingManager.progress
         
         # Simple stats for the text
-        if is_indexing:
+        if isIndexing:
             self.indexStatusText.visible = True
-            self.indexStatusText.value = f"{int(self.indexing_manager.progress * 100)}%"
+            self.indexStatusText.value = f"{int(self.indexingManager.progress * 100)}%"
         else:
             self.indexStatusText.visible = False
             
@@ -139,8 +152,8 @@ class TopBar(ft.Container):
             pass # Handle case where control might not be mounted
 
     def toggleTheme(self, e):
-        self.current_theme_index = (self.current_theme_index + 1) % len(self.theme_modes)
-        mode = self.theme_modes[self.current_theme_index]
+        self.currentThemeIndex = (self.currentThemeIndex + 1) % len(self.themeModes)
+        mode = self.themeModes[self.currentThemeIndex]
         
         # Update icon
         icons = {
@@ -154,13 +167,26 @@ class TopBar(ft.Container):
         self.themeDropdown.value = mode.capitalize()
         
         # Trigger callback
-        self.theme_callback(e)
+        self.themeCallback(e)
         self.update()
 
 
     def openIndexDialog(self, e):
         if not self.indexDlg in e.control.page.overlay:
             e.control.page.overlay.append(self.indexDlg)
-        self.indexDlg.sync_with_manager()
+        self.indexDlg.syncWithManager()
         self.indexDlg.open = True
+        e.control.page.update()
+
+    def openSettingsDialog(self, e):
+        if not self.settingsDlg in e.control.page.overlay:
+            e.control.page.overlay.append(self.settingsDlg)
+        self.settingsDlg.open = True
+        e.control.page.update()
+
+    def openGlobalTagsDialog(self, e):
+        if not self.globalTagsDlg in e.control.page.overlay:
+            e.control.page.overlay.append(self.globalTagsDlg)
+        self.globalTagsDlg.updateImageList()
+        self.globalTagsDlg.open = True
         e.control.page.update()

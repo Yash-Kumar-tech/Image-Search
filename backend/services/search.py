@@ -3,7 +3,7 @@ from pathlib import Path
 
 from backend.db.metadata_db import MetadataDB
 from backend.db.vector_db import VectorDB
-from backend.models.qwen_captioner import QwenCaptioner
+from backend.services.model_factory import ModelFactory
 from backend.utils.data_classes import SearchResult
 
 
@@ -11,7 +11,11 @@ class SearchEngine:
     def __init__(self):
         self.metadataDb = MetadataDB()
         self.vectorDb = VectorDB()
-        self.model = QwenCaptioner()
+        self.modelFactory = ModelFactory()
+    
+    @property
+    def model(self):
+        return self.modelFactory.getActiveModel()
     
     def searchByTag(self, query: str) -> List[SearchResult]:
         return self.metadataDb.searchByTag(query)
@@ -21,21 +25,21 @@ class SearchEngine:
         query: str,
         topK: int = 10
     ) -> List[SearchResult]:
-        queryEmb = self.model.encodeText(query)
-        results = self.vectorDb.search(queryEmb, topK = topK)
+        queryEmbedding = self.model.encodeText(query)
+        results = self.vectorDb.search(queryEmbedding, topK = topK)
         
         sanitized = []
         if results and "ids" in results and results["ids"]:
             ids = results["ids"][0]
-            for image_path in ids:
+            for imagePath in ids:
                 sanitized.append(SearchResult(
-                    path=Path(image_path),
+                    path=Path(imagePath),
                     tags=[],
                     indexedDate=""
                 ))
         return sanitized
     
-    def searchhybrid(
+    def searchHybrid(
         self,
         query: str,
         tagFilter: str,
